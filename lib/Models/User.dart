@@ -1,6 +1,6 @@
 class User {
-  String Username;
-  String Password;
+  String username;
+  String password;
 
-  User(this.Username, this.Password);
+  User(this.username, this.password);
 }

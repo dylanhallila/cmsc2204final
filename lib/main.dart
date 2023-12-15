@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:hallila_final/Models/Character.dart';
 import 'package:hallila_final/Models/LoginStructure.dart';
-import 'package:hallila_final/Models/User.dart';
-import 'package:hallila_final/Repositories/DataService.dart';
 import 'package:hallila_final/Repositories/UserClient.dart';
 import 'package:hallila_final/Views/AboutPage.dart';
+import 'package:hallila_final/Views/ListPage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -62,14 +62,11 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void onAboutTap() {
-    setState(() {
-      Navigator.push(
-          context, MaterialPageRoute(builder: (context) => const AboutPage()));
-    });
-  }
-
   void onLoginCallCompleted(var response) {
+    setState(() {
+      _loading = false;
+    });
+
     if (response == "password") {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Incorrect Password")));
@@ -77,12 +74,38 @@ class _MyHomePageState extends State<MyHomePage> {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Username Doesn't Exist")));
     } else if (response == "success") {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Login Success")));
+      setState(() {
+        getCharacters();
+      });
     }
+  }
 
+  void getCharacters() {
     setState(() {
+      _loading = true;
+      widget.userClient
+          .GetCharactersAsync()
+          .then((response) => onGetCharactersSuccess(response));
+    });
+  }
+
+  void onGetCharactersSuccess(List<Character>? characters) {
+    setState(() {
+      if (characters != null) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => ListPage(characters: characters)));
+      }
+
       _loading = false;
+    });
+  }
+
+  void onAboutTap() {
+    setState(() {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => const AboutPage()));
     });
   }
 
@@ -94,56 +117,82 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                const Text("Please Sign In"),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: usernameController,
-                        decoration: const InputDecoration(hintText: "Username"),
+        child: _loading
+            ? Center(
+                child: SizedBox.expand(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage("assets/images/starrysky.png"),
+                        fit: BoxFit.fitHeight,
                       ),
                     ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: passwordController,
-                        decoration: const InputDecoration(hintText: "Password"),
-                      ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: Colors.white),
+                        Text("Loading...",
+                            style: TextStyle(
+                                color: Colors.lightBlue,
+                                fontSize: 50,
+                                fontWeight: FontWeight.bold)),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                        onPressed: onLoginButtonPress,
-                        child: const Text("Login"))
-                  ],
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                    onTap: onAboutTap,
-                    child: const Text("About",
-                        style: TextStyle(fontWeight: FontWeight.bold))),
-                Text(_appVersion),
-              ],
-            ),
-          ],
-        ),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+                      const Text("Please Sign In"),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: usernameController,
+                              decoration:
+                                  const InputDecoration(hintText: "Username"),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: passwordController,
+                              decoration:
+                                  const InputDecoration(hintText: "Password"),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton(
+                              onPressed: onLoginButtonPress,
+                              child: const Text("Login"))
+                        ],
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                          onTap: onAboutTap,
+                          child: const Text("About",
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      Text(_appVersion),
+                    ],
+                  ),
+                ],
+              ),
       ),
     );
   }
